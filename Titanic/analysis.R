@@ -1,3 +1,4 @@
+setwd("~/GitHub/R_Code/Titanic")
 train <- read.csv('train.csv',header = TRUE)
 test <- read.csv('test.csv', header = TRUE)
 test.survived <- data.frame(Survived= rep('None', nrow(test)), test[,])
@@ -54,3 +55,36 @@ str(dat.combined)
 ggplot(dat.combined[1:891,], aes(x=Title, fill=Survived)) +  
   geom_bar()+
   facet_wrap(~Pclass)
+table(dat.combined$Sex)
+
+str(train)
+train$Survived <- as.factor(train$Survived)
+ggplot(train[,], aes(x = train$Sex, fill = train$Survived))+
+  geom_bar()+
+  facet_wrap(~Pclass)
+
+summary(dat.combined$Age)
+
+boys<- dat.combined[which(dat.combined$Title=="Master."),]
+head(boys)
+misses<- dat.combined[which(dat.combined$Title=="Miss."),]
+head(misses)
+summary(misses$Age)
+
+ggplot(misses[misses$Survived!="None",],aes(x=Age, fill= Survived))+
+  geom_histogram(binwidth = 5)+
+  facet_wrap(~Pclass)
+
+misses.alone<- misses[misses$SibSp==0 & misses$Parch==0,]
+nrow(misses.alone)
+summary(misses.alone$Age)
+length(which(misses.alone$Age <= 14.5))
+
+summary(dat.combined$SibSp)
+length(unique(dat.combined$SibSp))
+dat.combined$SibSp<- as.factor(dat.combined$SibSp)
+train$SibSp<- as.factor(train$SibSp)
+ggplot(dat.combined[1:891,], aes(x=SibSp, fill=Survived))+
+  geom_bar()+
+  facet_wrap(~Pclass+ Title)+
+  ylim(0,100)
