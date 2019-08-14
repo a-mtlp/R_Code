@@ -65,6 +65,10 @@ ggplot(train[,], aes(x = train$Sex, fill = train$Survived))+
 
 summary(dat.combined$Age)
 
+
+temp.sibsp <-c(train$SibSp, test$SibSp)
+temp.parch <- c(train$Parch,test$Parch)
+dat.combined$family.size<- as.factor(temp.sibsp+temp.parch+1)
 boys<- dat.combined[which(dat.combined$Title=="Master."),]
 head(boys)
 misses<- dat.combined[which(dat.combined$Title=="Miss."),]
@@ -88,3 +92,70 @@ ggplot(dat.combined[1:891,], aes(x=SibSp, fill=Survived))+
   geom_bar()+
   facet_wrap(~Pclass+ Title)+
   ylim(0,100)
+
+str(dat.combined$Ticket)
+dat.combined$Ticket<- as.character(dat.combined$Ticket)
+str(dat.combined$Ticket)
+dat.combined$Ticket[1:20]
+ticket.firstchar<- ifelse(dat.combined$Ticket=="", " ", substring(dat.combined$Ticket,1,1))
+unique(ticket.firstchar)
+dat.combined$Ticket.firstchat<- as.factor(ticket.firstchar)
+
+library(randomForest)
+
+rf.train.1 <- dat.combined[1:891, c("Pclass","Title")]
+rf.label <- as.factor(train$Survived)
+set.seed(1234)
+rf.1 <- randomForest(x= rf.train.1, y= rf.label,importance = TRUE, ntree = 1000)
+rf.1
+varImpPlot(rf.1)
+# Pclass and Title are quite predictive
+
+rf.train.2 <- dat.combined[1:891, c("Pclass","Title","SibSp")]
+set.seed(1234)
+rf.2 <- randomForest(x = rf.train.2, y = rf.label, importance = TRUE, ntree= 1000)
+rf.2
+varImpPlot(rf.2)
+# Pclass Title and SibSp have better Occurancy in predicting 
+#but have a worse negative-true rate
+
+
+rf.train.3 <- dat.combined[1:891, c("Pclass","Title","Parch")]
+set.seed(1234)
+rf.3 <- randomForest(x = rf.train.3, y = rf.label, importance = TRUE, ntree= 1000)
+rf.3
+varImpPlot(rf.3)
+
+# Parch is not as predictive as SibSp
+
+
+rf.train.4 <- dat.combined[1:891, c("Pclass","Title","Parch", "SibSp")]
+set.seed(1234)
+rf.4 <- randomForest(x = rf.train.4, y = rf.label, importance = TRUE, ntree= 1000)
+rf.4
+varImpPlot(rf.4)
+
+# combined Parch and sibsp are very predictive
+
+rf.train.5 <- dat.combined[1:891, c("Pclass","Title","family.size")]
+set.seed(1234)
+rf.5 <- randomForest(x = rf.train.5, y = rf.label, importance = TRUE, ntree= 1000)
+rf.5
+varImpPlot(rf.5)
+
+# Improvement! the Algorithm cannot combine parch and sibsp to family size
+#-> Data Scientist work
+
+rf.train.6 <- dat.combined[1:891, c("Pclass","Title","family.size","SibSp")]
+set.seed(1234)
+rf.6 <- randomForest(x = rf.train.6, y = rf.label, importance = TRUE, ntree= 1000)
+rf.6
+varImpPlot(rf.6)
+# Occuracy goes down when SibSp combined with family.size
+
+rf.train.7 <- dat.combined[1:891, c("Pclass","Title","family.size","Parch")]
+set.seed(1234)
+rf.7 <- randomForest(x = rf.train.7, y = rf.label, importance = TRUE, ntree= 1000)
+rf.7
+varImpPlot(rf.7)
+# Occuracy goes down when Parch combined with family.size
