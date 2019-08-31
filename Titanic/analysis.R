@@ -153,9 +153,70 @@ rf.6
 varImpPlot(rf.6)
 # Occuracy goes down when SibSp combined with family.size
 
+
 rf.train.7 <- dat.combined[1:891, c("Pclass","Title","family.size","Parch")]
 set.seed(1234)
 rf.7 <- randomForest(x = rf.train.7, y = rf.label, importance = TRUE, ntree= 1000)
 rf.7
 varImpPlot(rf.7)
 # Occuracy goes down when Parch combined with family.size
+
+test.submit.df <- dat.combined[892:1309, c("Pclass","Title","family.size")]
+rf.5.pred <- predict(rf.5, test.submit.df)
+table(rf.5.pred)
+
+submit.data <- data.frame(PassengerID = rep(892:1309), Survived= rf.5.pred)
+write.csv(submit.data, file="Submit_CSV_TITANIC.csv", row.names = FALSE)
+
+
+
+library(caret)
+library(doSNOW)
+
+set.seed(2348)
+cv.10.fold <- createMultiFolds(rf.label, k=10, times =10)
+
+table(rf.label)
+table(rf.label[cv.10.fold[[33]]])
+ctrl.1 <- trainControl(method = "repeatedcv", number = 10, repeats = 10, index = cv.10.fold)
+c1<- makeCluster(4, type = "SOCK")
+registerDoSNOW(c1)
+
+set.seed(34324)
+rf.5.cv.1 <- train(x= rf.train.5, y= rf.label, method="rf", 
+                   tuneLength=3, ntree=1000, trControl=ctrl.1)
+stopCluster(c1)
+
+rf.5.cv.1
+rf.5
+
+set.seed(2348)
+cv.10.fold <- createMultiFolds(rf.label, k=3, times =10)
+ctrl.2 <- trainControl(method = "repeatedcv", number = 3, repeats = 10, index = cv.10.fold)
+c1<- makeCluster(4, type = "SOCK")
+registerDoSNOW(c1)
+
+set.seed(34324) 
+rf.5.cv.2 <- train(x= rf.train.5, y= rf.label, method="rf", 
+                   tuneLength=3, ntree=1000, trControl=ctrl.2)
+stopCluster(c1)
+
+rf.5.cv.2
+
+library(rpart)
+library(rpart.plot)
+rpart.cv <- function(seed, training, labels, ctrl){
+  c1 <- makeCluster(4, "SOCK")
+  registerDoSNOW(c1)
+  set.seed(seed)
+  rpart.cv <-train(x=training, y= labels, method = "rpart", tuneLength=30, trControl = ctrl)
+  stopCluster(c1)
+  return (rpart.cv)
+}
+
+features <- c("Pclass", "Title", "family.size")
+rpart.train.1 <- dat.combined[1:891, features]
+rpart.1.cv1 <- rpart.cv(94622, rpart.train.1, rf.label,ctrl.2)
+rpart.1.cv1
+
+prp(rpart.1.cv1$finalModel, type=0, extra=1,under = TRUE)
